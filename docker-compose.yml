@@ -1,0 +1,7 @@
+services:
+  rabbitmq:
+    hostname: "rabbit"
+    image: rabbitmq:4.0-management-alpine
+    ports:
+      - 15672:15672
+      - 5672:5672

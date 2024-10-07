@@ -1,0 +1,6 @@
+.env
+tmp
+api-bin
+user-service-bin
+product-service-bin
+order-service-bin
