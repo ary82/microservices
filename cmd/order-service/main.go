@@ -9,10 +9,19 @@ import (
 	"syscall"
 
 	"github.com/ary82/microservices/internal/orders"
+	"github.com/joho/godotenv"
 )
 
 func main() {
 	fmt.Println("order")
+
+	mode := os.Getenv("MODE")
+	if mode != "dev" && mode != "prod" {
+		err := godotenv.Load()
+		if err != nil {
+			log.Fatal("error loading .env:", err)
+		}
+	}
 
 	port := "8003"
 	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%s", port))

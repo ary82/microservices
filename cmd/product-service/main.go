@@ -9,10 +9,19 @@ import (
 	"syscall"
 
 	"github.com/ary82/microservices/internal/products"
+	"github.com/joho/godotenv"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 func main() {
+	mode := os.Getenv("MODE")
+	if mode != "dev" && mode != "prod" {
+		err := godotenv.Load()
+		if err != nil {
+			log.Fatal("error loading .env:", err)
+		}
+	}
+
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	if err != nil {
 		log.Fatal("can't initialize queue:", err)

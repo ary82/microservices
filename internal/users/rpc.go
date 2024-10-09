@@ -2,9 +2,9 @@ package users
 
 import (
 	"context"
-	"log"
 
 	"github.com/ary82/microservices/internal/proto"
+	"github.com/google/uuid"
 	"google.golang.org/grpc"
 )
 
@@ -16,24 +16,65 @@ func NewGrpcServer(port string) *grpc.Server {
 }
 
 // grpc server implementation
-type usersService struct {
+type usersServiceRpc struct {
+	service UsersService
+
+	// implement grpc
 	proto.UnimplementedUserServiceServer
 }
 
-func (s *usersService) GetUser(context.Context, *proto.UserId) (*proto.User, error) {
-	return &proto.User{}, nil
+func (s *usersServiceRpc) GetUser(ctx context.Context, in *proto.UserId) (*proto.User, error) {
+	id, err := uuid.FromBytes(in.Value)
+	if err != nil {
+		return nil, err
+	}
+	user, err := s.service.GetUser(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &proto.User{
+		Id:       id[:],
+		Email:    user.Email,
+		Username: user.Username,
+		Type:     proto.UserType(user.UserType),
+	}, nil
 }
 
-func (s *usersService) GetUsers(context.Context, *proto.GetUsersParams) (*proto.Users, error) {
-	log.Println("GetProducts")
-	return &proto.Users{}, nil
+func (s *usersServiceRpc) GetUsers(context.Context, *proto.GetUsersParams) (*proto.Users, error) {
+	users, err := s.service.GetAllUsers()
+	if err != nil {
+		return nil, err
+	}
+
+	protoUsers := new(proto.Users)
+	for _, v := range users {
+		protoUsers.Users = append(protoUsers.Users, &proto.User{
+			Id:       v.Id[:],
+			Email:    v.Email,
+			Username: v.Username,
+			Type:     proto.UserType(v.UserType),
+		})
+	}
+
+	return protoUsers, nil
 }
 
-func (s *usersService) Login(context.Context, *proto.LoginRequest) (*proto.LoginResponse, error) {
-	return &proto.LoginResponse{}, nil
+func (s *usersServiceRpc) Login(ctx context.Context, in *proto.LoginRequest) (*proto.LoginResponse, error) {
+	token, err := s.service.LoginUser(LoginRequest{
+		Email:    in.Email,
+		Password: in.Password,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &proto.LoginResponse{
+		AccessToken: *token,
+	}, nil
 }
 
 func NewUsersServer() proto.UserServiceServer {
-	s := new(usersService)
+	s := new(usersServiceRpc)
 	return s
 }
