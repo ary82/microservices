@@ -7,6 +7,7 @@ service UserService {
   rpc GetUser(UserId) returns (User);
   rpc GetUsers(GetUsersParams) returns (Users);
   rpc Login(LoginRequest) returns (LoginResponse);
+  rpc RegisterUser(RegisterUserRequest) returns (RegisterUserResponse);
 }
 
 message UserId { bytes value = 1; }
@@ -36,3 +37,12 @@ message LoginRequest {
 }
 
 message LoginResponse { string access_token = 1; }
+
+message RegisterUserRequest {
+  string email = 1;
+  string username = 2;
+  string password = 3;
+  UserType type = 4;
+}
+
+message RegisterUserResponse { bytes id = 1; }

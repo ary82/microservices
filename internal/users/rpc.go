@@ -23,6 +23,11 @@ type usersServiceRpc struct {
 	proto.UnimplementedUserServiceServer
 }
 
+func NewUsersServer() proto.UserServiceServer {
+	s := new(usersServiceRpc)
+	return s
+}
+
 func (s *usersServiceRpc) GetUser(ctx context.Context, in *proto.UserId) (*proto.User, error) {
 	id, err := uuid.FromBytes(in.Value)
 	if err != nil {
@@ -74,7 +79,18 @@ func (s *usersServiceRpc) Login(ctx context.Context, in *proto.LoginRequest) (*p
 	}, nil
 }
 
-func NewUsersServer() proto.UserServiceServer {
-	s := new(usersServiceRpc)
-	return s
+func (s *usersServiceRpc) RegisterUser(ctx context.Context, in *proto.RegisterUserRequest) (*proto.RegisterUserResponse, error) {
+	id, err := s.service.RegisterUser(RegisterUserRequest{
+		Username: in.Username,
+		Email:    in.Email,
+		Password: in.Password,
+		UserType: int32(in.Type),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &proto.RegisterUserResponse{
+		Id: id[:],
+	}, nil
 }

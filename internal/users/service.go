@@ -1,6 +1,7 @@
 package users
 
 import (
+	"crypto/rand"
 	"crypto/subtle"
 	"fmt"
 
@@ -12,6 +13,7 @@ type UsersService interface {
 	GetUser(id uuid.UUID) (*User, error)
 	GetAllUsers() ([]*User, error)
 	LoginUser(LoginRequest) (*string, error)
+	RegisterUser(req RegisterUserRequest) (uuid.UUID, error)
 }
 
 type usersService struct {
@@ -64,4 +66,32 @@ func (s *usersService) LoginUser(req LoginRequest) (*string, error) {
 	}
 
 	return &token, nil
+}
+
+func (s *usersService) RegisterUser(req RegisterUserRequest) (*uuid.UUID, error) {
+	id, err := uuid.NewV7()
+	if err != nil {
+		return nil, err
+	}
+
+	salt := []byte{}
+	_, err = rand.Read(salt)
+	if err != nil {
+		return nil, err
+	}
+
+	hash := argon2.IDKey([]byte(req.Password), salt, 1, 64*1024, 4, 32)
+
+	err = s.repo.RegisterUser(
+		id,
+		req.Username,
+		req.Email,
+		string(salt),
+		string(hash),
+		req.UserType,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &id, nil
 }

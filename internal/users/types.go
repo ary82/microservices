@@ -22,3 +22,10 @@ type LoginRequest struct {
 	Email    string
 	Password string
 }
+
+type RegisterUserRequest struct {
+	Username string
+	Email    string
+	Password string
+	UserType int32
+}
