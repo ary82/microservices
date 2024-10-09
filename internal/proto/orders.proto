@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+option go_package = "github.com/ary82/microservices/internal/proto";
+package proto;
+
+service OrdersService {
+  rpc GetOrder(UUID) returns (Order);
+  rpc GetOrders(GetOrdersParams) returns (OrderList);
+  rpc PlaceOrder(PlaceOrderParams) returns (PlaceOrderResponse);
+}
+
+message UUID { bytes value = 1; }
+
+message OrderProduct {
+  bytes product_id = 1;
+  int64 quantity = 2;
+  int64 price = 3;
+}
+
+message Order {
+  bytes user_id = 1;
+  int64 price_total = 2;
+  int64 stock = 3;
+
+  repeated OrderProduct products = 4;
+}
+
+message GetOrdersParams {}
+
+message OrderList {
+  int64 number = 1;
+  repeated Order orders = 2;
+}
+
+message PlaceOrderParams {
+  bytes user_id = 1;
+  repeated OrderProduct products = 2;
+}
+
+message PlaceOrderResponse {
+  bytes uuid = 1;
+}
