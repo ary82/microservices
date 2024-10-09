@@ -28,7 +28,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type OrdersServiceClient interface {
-	GetOrder(ctx context.Context, in *UUID, opts ...grpc.CallOption) (*Order, error)
+	GetOrder(ctx context.Context, in *OrderId, opts ...grpc.CallOption) (*Order, error)
 	GetOrders(ctx context.Context, in *GetOrdersParams, opts ...grpc.CallOption) (*OrderList, error)
 	PlaceOrder(ctx context.Context, in *PlaceOrderParams, opts ...grpc.CallOption) (*PlaceOrderResponse, error)
 }
@@ -41,7 +41,7 @@ func NewOrdersServiceClient(cc grpc.ClientConnInterface) OrdersServiceClient {
 	return &ordersServiceClient{cc}
 }
 
-func (c *ordersServiceClient) GetOrder(ctx context.Context, in *UUID, opts ...grpc.CallOption) (*Order, error) {
+func (c *ordersServiceClient) GetOrder(ctx context.Context, in *OrderId, opts ...grpc.CallOption) (*Order, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Order)
 	err := c.cc.Invoke(ctx, OrdersService_GetOrder_FullMethodName, in, out, cOpts...)
@@ -75,7 +75,7 @@ func (c *ordersServiceClient) PlaceOrder(ctx context.Context, in *PlaceOrderPara
 // All implementations must embed UnimplementedOrdersServiceServer
 // for forward compatibility
 type OrdersServiceServer interface {
-	GetOrder(context.Context, *UUID) (*Order, error)
+	GetOrder(context.Context, *OrderId) (*Order, error)
 	GetOrders(context.Context, *GetOrdersParams) (*OrderList, error)
 	PlaceOrder(context.Context, *PlaceOrderParams) (*PlaceOrderResponse, error)
 	mustEmbedUnimplementedOrdersServiceServer()
@@ -85,7 +85,7 @@ type OrdersServiceServer interface {
 type UnimplementedOrdersServiceServer struct {
 }
 
-func (UnimplementedOrdersServiceServer) GetOrder(context.Context, *UUID) (*Order, error) {
+func (UnimplementedOrdersServiceServer) GetOrder(context.Context, *OrderId) (*Order, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetOrder not implemented")
 }
 func (UnimplementedOrdersServiceServer) GetOrders(context.Context, *GetOrdersParams) (*OrderList, error) {
@@ -108,7 +108,7 @@ func RegisterOrdersServiceServer(s grpc.ServiceRegistrar, srv OrdersServiceServe
 }
 
 func _OrdersService_GetOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UUID)
+	in := new(OrderId)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func _OrdersService_GetOrder_Handler(srv interface{}, ctx context.Context, dec f
 		FullMethod: OrdersService_GetOrder_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(OrdersServiceServer).GetOrder(ctx, req.(*UUID))
+		return srv.(OrdersServiceServer).GetOrder(ctx, req.(*OrderId))
 	}
 	return interceptor(ctx, in, info, handler)
 }

@@ -4,12 +4,12 @@ option go_package = "github.com/ary82/microservices/internal/proto";
 package proto;
 
 service ProductsService {
-  rpc GetProduct(UUID) returns (Product);
+  rpc GetProduct(ProductId) returns (Product);
   rpc GetProducts(GetProductsParams) returns (ProductList);
   rpc AddProduct(Product) returns (AddProductResponse);
 }
 
-message UUID { bytes value = 1; }
+message ProductId { bytes value = 1; }
 
 message Product {
   string name = 1;

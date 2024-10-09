@@ -4,12 +4,12 @@ option go_package = "github.com/ary82/microservices/internal/proto";
 package proto;
 
 service OrdersService {
-  rpc GetOrder(UUID) returns (Order);
+  rpc GetOrder(OrderId) returns (Order);
   rpc GetOrders(GetOrdersParams) returns (OrderList);
   rpc PlaceOrder(PlaceOrderParams) returns (PlaceOrderResponse);
 }
 
-message UUID { bytes value = 1; }
+message OrderId { bytes value = 1; }
 
 message OrderProduct {
   bytes product_id = 1;
@@ -37,6 +37,4 @@ message PlaceOrderParams {
   repeated OrderProduct products = 2;
 }
 
-message PlaceOrderResponse {
-  bytes uuid = 1;
-}
+message PlaceOrderResponse { bytes uuid = 1; }

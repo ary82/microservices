@@ -4,12 +4,12 @@ option go_package = "github.com/ary82/microservices/internal/proto";
 package proto;
 
 service UserService {
-  rpc GetUser(UUID) returns (User);
+  rpc GetUser(UserId) returns (User);
   rpc GetUsers(GetUsersParams) returns (Users);
   rpc Login(LoginRequest) returns (LoginResponse);
 }
 
-message UUID { bytes value = 1; }
+message UserId { bytes value = 1; }
 
 message User {
   string email = 1;
