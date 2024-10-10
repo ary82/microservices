@@ -43,13 +43,12 @@ func main() {
 		log.Fatal("can't initialize channel:", err)
 	}
 
-	err = products.InitializeConsumerQueue(mqChannel)
-	if err != nil {
-		log.Fatal("mq initialization failed:", err)
-	}
-
 	pr := products.NewProductsRepository(db)
-	ps := products.NewProductsService(pr, mqChannel)
+
+	exchangeName := os.Getenv("RABBITMQ_EXCHANGE")
+	producer := products.NewEventProducer(exchangeName, mqChannel)
+	consumer := products.NewEventConsumer(mqChannel, exchangeName, pr)
+	ps := products.NewProductsService(pr, producer)
 	s := products.NewGrpcServer(port, ps)
 
 	log.Println("starting grpc server on:", port)
@@ -60,6 +59,15 @@ func main() {
 		}
 	}()
 
+	events := []string{
+		"USER_REGISTERED",
+		"ORDER_PLACED",
+	}
+	err = consumer.Consume(events)
+	if err != nil {
+		log.Fatal("failed initializing mq:", err)
+	}
+
 	// Wait for an interrupt
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, syscall.SIGINT)
@@ -67,10 +75,11 @@ func main() {
 	<-done
 	fmt.Println("Stopping...")
 
-	// RabbitMQ
-	// mqChannel.Close()
-	// conn.Close()
-
+	// mq
+	_ = mqChannel.Close()
+	_ = conn.Close()
 	// grpc
 	s.Stop()
+	// db
+	_ = db.Close()
 }

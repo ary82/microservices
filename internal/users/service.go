@@ -5,10 +5,8 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"fmt"
-	"log"
 
 	"github.com/google/uuid"
-	amqp "github.com/rabbitmq/amqp091-go"
 	"golang.org/x/crypto/argon2"
 )
 
@@ -20,14 +18,14 @@ type UsersService interface {
 }
 
 type usersService struct {
-	repo   UsersRepository
-	mqChan *amqp.Channel
+	repo     UsersRepository
+	producer EventProducer
 }
 
-func NewUsersService(repo UsersRepository, ch *amqp.Channel) UsersService {
+func NewUsersService(repo UsersRepository, p EventProducer) UsersService {
 	return &usersService{
-		repo:   repo,
-		mqChan: ch,
+		repo:     repo,
+		producer: p,
 	}
 }
 
@@ -123,19 +121,7 @@ func (s *usersService) RegisterUser(req RegisterUserRequest) (*uuid.UUID, error)
 		return nil, err
 	}
 
-	err = s.mqChan.Publish(
-		"inter_microservice", // exchange
-		"USER_REGISTERED",    // routing key
-		false,                // mandatory
-		false,                // immediate
-		amqp.Publishing{
-			ContentType: "text/plain",
-			Body:        id[:],
-		},
-	)
-	if err != nil {
-		log.Println("CANNOT PUBLISH:", err)
-	}
+	s.producer.Produce("USER_REGISTERED", id[:])
 
 	return &id, nil
 }

@@ -1,8 +1,12 @@
 package orders
 
 import (
+	"bytes"
+	"encoding/json"
+	"log"
+
+	"github.com/ary82/microservices/internal/mq"
 	"github.com/google/uuid"
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type OrdersService interface {
@@ -12,14 +16,14 @@ type OrdersService interface {
 }
 
 type ordersService struct {
-	repo   OrdersRepository
-	mqChan *amqp.Channel
+	repo     OrdersRepository
+	producer EventProducer
 }
 
-func NewOrdersService(repo OrdersRepository, ch *amqp.Channel) OrdersService {
+func NewOrdersService(repo OrdersRepository, p EventProducer) OrdersService {
 	return &ordersService{
-		repo:   repo,
-		mqChan: ch,
+		repo:     repo,
+		producer: p,
 	}
 }
 
@@ -59,6 +63,22 @@ func (s *ordersService) PlaceOrder(req PlaceOrderRequest) (*uuid.UUID, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Send Message
+	payload := mq.OrderPlacedPayload{}
+	for _, v := range req.Products {
+		payload.Products = append(payload.Products, &mq.OrderPlacedProduct{
+			ProductId: v.ProductId,
+			Quantity:  v.Quantity,
+		})
+	}
+
+	var b bytes.Buffer
+	err = json.NewEncoder(&b).Encode(payload)
+	if err != nil {
+		log.Println(err)
+	}
+	s.producer.Produce("ORDER_PLACED", b.Bytes())
 
 	return &id, nil
 }

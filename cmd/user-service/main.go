@@ -42,8 +42,11 @@ func main() {
 	if err != nil {
 		log.Fatal("can't initialize channel:", err)
 	}
+
 	ur := users.NewUsersRepository(db)
-	us := users.NewUsersService(ur, mqChannel)
+
+	producer := users.NewEventProducer(os.Getenv("RABBITMQ_EXCHANGE"), mqChannel)
+	us := users.NewUsersService(ur, producer)
 	s := users.NewGrpcServer(port, us)
 
 	log.Println("starting grpc server on:", port)
