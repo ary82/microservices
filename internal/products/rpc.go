@@ -58,6 +58,7 @@ func (s *productsServiceRpc) GetProducts(context.Context, *proto.GetProductsPara
 
 	for _, v := range products {
 		protoProducts.Products = append(protoProducts.Products, &proto.Product{
+			Id:          v.Id[:],
 			Name:        v.Name,
 			Description: v.Desc,
 			Price:       v.Price,

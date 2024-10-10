@@ -2,38 +2,106 @@ package orders
 
 import (
 	"context"
-	"log"
 
 	"github.com/ary82/microservices/internal/proto"
+	"github.com/google/uuid"
 	"google.golang.org/grpc"
 )
 
-func NewGrpcServer(port string) *grpc.Server {
+func NewGrpcServer(port string, os OrdersService) *grpc.Server {
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
-	proto.RegisterOrdersServiceServer(grpcServer, NewUsersServer())
+	proto.RegisterOrdersServiceServer(grpcServer, NewOrdersServer(os))
 	return grpcServer
 }
 
 // grpc server implementation
-type ordersService struct {
+type ordersServiceRpc struct {
+	service OrdersService
+
+	// implement orders grpc
 	proto.UnimplementedOrdersServiceServer
 }
 
-func (s *ordersService) GetOrder(context.Context, *proto.OrderId) (*proto.Order, error) {
-	return &proto.Order{}, nil
+func NewOrdersServer(s OrdersService) proto.OrdersServiceServer {
+	return &ordersServiceRpc{
+		service: s,
+	}
 }
 
-func (s *ordersService) GetOrders(context.Context, *proto.GetOrdersParams) (*proto.OrderList, error) {
-	log.Println("GetProducts")
-	return &proto.OrderList{}, nil
+func (s *ordersServiceRpc) GetOrder(ctx context.Context, in *proto.OrderId) (*proto.Order, error) {
+	id, err := uuid.FromBytes(in.Value)
+	if err != nil {
+		return nil, err
+	}
+
+	order, err := s.service.GetOrder(id)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &proto.Order{
+		UserId:     order.UserId[:],
+		PriceTotal: int64(order.TotalPrice),
+		Quantity:   int64(order.TotalQuantity),
+	}
+
+	for _, v := range order.Products {
+		resp.Products = append(resp.Products, &proto.OrderProduct{
+			ProductId: v.ProductId[:],
+			Quantity:  int64(v.Quantity),
+			Price:     int64(v.Price),
+		})
+	}
+	return resp, nil
 }
 
-func (s *ordersService) PlaceOrder(context.Context, *proto.PlaceOrderParams) (*proto.PlaceOrderResponse, error) {
-	return &proto.PlaceOrderResponse{}, nil
+func (s *ordersServiceRpc) GetOrders(context.Context, *proto.GetOrdersParams) (*proto.OrderList, error) {
+	orders, err := s.service.GetAllOrders()
+	if err != nil {
+		return nil, err
+	}
+	resp := &proto.OrderList{
+		Number: int64(len(orders)),
+	}
+
+	for _, v := range orders {
+		resp.Orders = append(resp.Orders, &proto.OrderListOrder{
+			UserId:     v.Id[:],
+			PriceTotal: int64(v.TotalPrice),
+			Quantity:   int64(v.TotalQuantity),
+		})
+	}
+	return resp, nil
 }
 
-func NewUsersServer() proto.OrdersServiceServer {
-	s := new(ordersService)
-	return s
+func (s *ordersServiceRpc) PlaceOrder(ctx context.Context, in *proto.PlaceOrderParams) (*proto.PlaceOrderResponse, error) {
+	userId, err := uuid.FromBytes(in.UserId)
+	if err != nil {
+		return nil, err
+	}
+	req := PlaceOrderRequest{
+		UserId: userId,
+	}
+	for _, v := range in.Products {
+		productId, err := uuid.FromBytes(v.ProductId)
+		if err != nil {
+			return nil, err
+		}
+
+		req.Products = append(req.Products, &DetailedOrderProduct{
+			ProductId: productId,
+			Quantity:  int(v.Quantity),
+			Price:     int(v.Price),
+		})
+	}
+
+	orderId, err := s.service.PlaceOrder(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return &proto.PlaceOrderResponse{
+		Uuid: (*orderId)[:],
+	}, nil
 }

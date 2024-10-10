@@ -13,8 +13,6 @@ import (
 )
 
 func main() {
-	fmt.Println("user")
-
 	mode := os.Getenv("MODE")
 	if mode != "dev" && mode != "prod" {
 		err := godotenv.Load()

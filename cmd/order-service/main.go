@@ -13,8 +13,6 @@ import (
 )
 
 func main() {
-	fmt.Println("order")
-
 	mode := os.Getenv("MODE")
 	if mode != "dev" && mode != "prod" {
 		err := godotenv.Load()
@@ -29,7 +27,13 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	s := orders.NewGrpcServer(port)
+	db, err := orders.NewSqlDb(os.Getenv("ORDERS_SERVICE_DB_URL"))
+	if err != nil {
+		log.Fatalf("failed to mount db: %v", err)
+	}
+	repo := orders.NewOrdersRepository(db)
+	service := orders.NewOrdersService(repo)
+	s := orders.NewGrpcServer(port, service)
 
 	log.Println("starting grpc server on:", port)
 	go func() {

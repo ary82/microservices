@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS order_products(
   order_id UUID,
   product_id UUID,
   price INT,
-  quantity INT,
+  quantity INT
 );
 
 
