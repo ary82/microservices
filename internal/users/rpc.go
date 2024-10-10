@@ -4,14 +4,13 @@ import (
 	"context"
 
 	"github.com/ary82/microservices/internal/proto"
-	"github.com/google/uuid"
 	"google.golang.org/grpc"
 )
 
-func NewGrpcServer(port string) *grpc.Server {
+func NewGrpcServer(port string, s UsersService) *grpc.Server {
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
-	proto.RegisterUserServiceServer(grpcServer, NewUsersServer())
+	proto.RegisterUserServiceServer(grpcServer, NewUsersServer(s))
 	return grpcServer
 }
 
@@ -23,23 +22,20 @@ type usersServiceRpc struct {
 	proto.UnimplementedUserServiceServer
 }
 
-func NewUsersServer() proto.UserServiceServer {
-	s := new(usersServiceRpc)
-	return s
+func NewUsersServer(s UsersService) proto.UserServiceServer {
+	return &usersServiceRpc{
+		service: s,
+	}
 }
 
 func (s *usersServiceRpc) GetUser(ctx context.Context, in *proto.UserId) (*proto.User, error) {
-	id, err := uuid.FromBytes(in.Value)
-	if err != nil {
-		return nil, err
-	}
-	user, err := s.service.GetUser(id)
+	user, err := s.service.GetUser(in.Value)
 	if err != nil {
 		return nil, err
 	}
 
 	return &proto.User{
-		Id:       id[:],
+		Id:       user.Id[:],
 		Email:    user.Email,
 		Username: user.Username,
 		Type:     proto.UserType(user.UserType),
@@ -53,6 +49,7 @@ func (s *usersServiceRpc) GetUsers(context.Context, *proto.GetUsersParams) (*pro
 	}
 
 	protoUsers := new(proto.Users)
+	protoUsers.Number = int64(len(users))
 	for _, v := range users {
 		protoUsers.Users = append(protoUsers.Users, &proto.User{
 			Id:       v.Id[:],
@@ -80,12 +77,13 @@ func (s *usersServiceRpc) Login(ctx context.Context, in *proto.LoginRequest) (*p
 }
 
 func (s *usersServiceRpc) RegisterUser(ctx context.Context, in *proto.RegisterUserRequest) (*proto.RegisterUserResponse, error) {
-	id, err := s.service.RegisterUser(RegisterUserRequest{
+	req := RegisterUserRequest{
 		Username: in.Username,
 		Email:    in.Email,
 		Password: in.Password,
 		UserType: int32(in.Type),
-	})
+	}
+	id, err := s.service.RegisterUser(req)
 	if err != nil {
 		return nil, err
 	}

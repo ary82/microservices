@@ -3,6 +3,7 @@ package users
 import (
 	"crypto/rand"
 	"crypto/subtle"
+	"encoding/base64"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -10,10 +11,10 @@ import (
 )
 
 type UsersService interface {
-	GetUser(id uuid.UUID) (*User, error)
+	GetUser(id string) (*User, error)
 	GetAllUsers() ([]*User, error)
 	LoginUser(LoginRequest) (*string, error)
-	RegisterUser(req RegisterUserRequest) (uuid.UUID, error)
+	RegisterUser(req RegisterUserRequest) (*uuid.UUID, error)
 }
 
 type usersService struct {
@@ -26,14 +27,24 @@ func NewUsersService(repo UsersRepository) UsersService {
 	}
 }
 
-func (s *usersService) GetUser(id uuid.UUID) (*User, error) {
-	user, err := s.repo.FetchUser(id)
+func (s *usersService) GetUser(id string) (*User, error) {
+	decodeID, err := base64.StdEncoding.DecodeString(id)
+	if err != nil {
+		return nil, err
+	}
+
+	uuid, err := uuid.FromBytes(decodeID)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := s.repo.FetchUser(uuid)
 	if err != nil {
 		return nil, err
 	}
 
 	return &User{
-		Id:       id,
+		Id:       uuid,
 		Username: user.Username,
 		Email:    user.Email,
 		UserType: user.UserType,
@@ -53,9 +64,20 @@ func (s *usersService) LoginUser(req LoginRequest) (*string, error) {
 	if err != nil {
 		return nil, err
 	}
-	hash := argon2.IDKey([]byte(req.Password), []byte(user.Salt), 1, 64*1024, 4, 32)
 
-	match := subtle.ConstantTimeCompare([]byte(req.Password), hash)
+	saltDecode, err := base64.StdEncoding.DecodeString(user.Salt)
+	if err != nil {
+		return nil, err
+	}
+
+	hashDecode, err := base64.StdEncoding.DecodeString(user.PassHash)
+	if err != nil {
+		return nil, err
+	}
+
+	hash := argon2.IDKey([]byte(req.Password), saltDecode, 1, 64*1024, 4, 32)
+
+	match := subtle.ConstantTimeCompare(hashDecode, hash)
 	if match == 0 {
 		return nil, fmt.Errorf("password incorrect")
 	}
@@ -74,7 +96,7 @@ func (s *usersService) RegisterUser(req RegisterUserRequest) (*uuid.UUID, error)
 		return nil, err
 	}
 
-	salt := []byte{}
+	salt := make([]byte, 32)
 	_, err = rand.Read(salt)
 	if err != nil {
 		return nil, err
@@ -82,12 +104,15 @@ func (s *usersService) RegisterUser(req RegisterUserRequest) (*uuid.UUID, error)
 
 	hash := argon2.IDKey([]byte(req.Password), salt, 1, 64*1024, 4, 32)
 
+	base64Salt := base64.StdEncoding.EncodeToString(salt)
+	base64Hash := base64.StdEncoding.EncodeToString(hash)
+
 	err = s.repo.RegisterUser(
 		id,
 		req.Username,
 		req.Email,
-		string(salt),
-		string(hash),
+		base64Salt,
+		base64Hash,
 		req.UserType,
 	)
 	if err != nil {

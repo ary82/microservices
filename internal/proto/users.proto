@@ -10,7 +10,7 @@ service UserService {
   rpc RegisterUser(RegisterUserRequest) returns (RegisterUserResponse);
 }
 
-message UserId { bytes value = 1; }
+message UserId { string value = 1; }
 
 message User {
   bytes id = 1;

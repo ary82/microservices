@@ -28,7 +28,7 @@ const (
 	fetchUserQuery        = "SELECT username, email, salt, pass_hash, user_type FROM users WHERE id = $1"
 	FetchUserByEmailQuery = "SELECT id, username, salt, pass_hash, user_type FROM users WHERE email = $1"
 	fetchAllUsersQuery    = "SELECT id, username, email, user_type FROM users"
-	registerUserQuery     = "INSERT INTO users(id, username, email, salt, pass_hash, user_type, created_at) VALUES($1, $2, $3, $4, $5, $6)"
+	registerUserQuery     = "INSERT INTO users(id, username, email, salt, pass_hash, user_type, created_at) VALUES($1, $2, $3, $4, $5, $6, $7)"
 )
 
 func (r *usersRepository) FetchUser(id uuid.UUID) (*DetailedUser, error) {
@@ -48,7 +48,7 @@ func (r *usersRepository) FetchUser(id uuid.UUID) (*DetailedUser, error) {
 
 func (r *usersRepository) FetchUserByEmail(email string) (*DetailedUser, error) {
 	user := &DetailedUser{Email: email}
-	err := r.db.QueryRow(fetchUserQuery, email).Scan(
+	err := r.db.QueryRow(FetchUserByEmailQuery, email).Scan(
 		&user.Id,
 		&user.Username,
 		&user.Salt,
@@ -67,9 +67,10 @@ func (r *usersRepository) FetchAllUsers() ([]*User, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	for rows.Next() {
-		user := new(DetailedUser)
+		user := new(User)
 		err = rows.Scan(
 			&user.Id,
 			&user.Username,
@@ -79,6 +80,7 @@ func (r *usersRepository) FetchAllUsers() ([]*User, error) {
 		if err != nil {
 			return nil, err
 		}
+		users = append(users, user)
 	}
 	if err = rows.Err(); err != nil {
 		return nil, err

@@ -3,7 +3,6 @@ package users
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log"
 	"time"
 
@@ -21,7 +20,7 @@ func NewSqlDb(dburl string) (*sql.DB, error) {
 
 	err = db.PingContext(ctx)
 	if err != nil {
-		log.Fatalf(fmt.Sprintf("db down: %v", err))
+		log.Fatalf("db down: %v", err)
 	}
 
 	return db, nil

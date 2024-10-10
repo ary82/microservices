@@ -29,7 +29,13 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	s := users.NewGrpcServer(port)
+	db, err := users.NewSqlDb(os.Getenv("USERS_SERVICE_DB_URL"))
+	if err != nil {
+		log.Fatalf("failed to mount db: %v", err)
+	}
+	ur := users.NewUsersRepository(db)
+	us := users.NewUsersService(ur)
+	s := users.NewGrpcServer(port, us)
 
 	log.Println("starting grpc server on:", port)
 	go func() {
