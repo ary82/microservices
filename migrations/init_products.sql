@@ -6,3 +6,5 @@ CREATE TABLE IF NOT EXISTS products(
   stock INT,
   created_at TIMESTAMP
 );
+
+ALTER TABLE products ADD CONSTRAINT chk_stock CHECK (stock >= 0);

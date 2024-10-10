@@ -10,7 +10,6 @@ import (
 
 	"github.com/ary82/microservices/internal/products"
 	"github.com/joho/godotenv"
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 func main() {
@@ -22,26 +21,26 @@ func main() {
 		}
 	}
 
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
-	if err != nil {
-		log.Fatal("can't initialize queue:", err)
-	}
-
-	mqChannel, err := conn.Channel()
-	if err != nil {
-		log.Fatal("can't initialize channel:", err)
-	}
-	queue, err := mqChannel.QueueDeclare(
-		"q1",
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
-	if err != nil {
-		log.Fatal("can't initialize queue:", err)
-	}
+	// conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	// if err != nil {
+	// 	log.Fatal("can't initialize queue:", err)
+	// }
+	//
+	// mqChannel, err := conn.Channel()
+	// if err != nil {
+	// 	log.Fatal("can't initialize channel:", err)
+	// }
+	// queue, err := mqChannel.QueueDeclare(
+	// 	"q1",
+	// 	true,
+	// 	false,
+	// 	false,
+	// 	false,
+	// 	nil,
+	// )
+	// if err != nil {
+	// 	log.Fatal("can't initialize queue:", err)
+	// }
 
 	// body := "Hello World!"
 	// err = mqChannel.PublishWithContext(context.Background(),
@@ -57,24 +56,24 @@ func main() {
 	// if err != nil {
 	// 	log.Fatal("can't send message:", err)
 	// }
-	msgs, err := mqChannel.Consume(
-		queue.Name, // queue
-		"",         // consumer
-		true,       // auto-ack
-		false,      // exclusive
-		false,      // no-local
-		false,      // no-wait
-		nil,        // args
-	)
-	if err != nil {
-		log.Fatal("can't consume:", err)
-	}
-
-	go func() {
-		for d := range msgs {
-			log.Printf("Received a message: %s", d.Body)
-		}
-	}()
+	// msgs, err := mqChannel.Consume(
+	// 	queue.Name, // queue
+	// 	"",         // consumer
+	// 	true,       // auto-ack
+	// 	false,      // exclusive
+	// 	false,      // no-local
+	// 	false,      // no-wait
+	// 	nil,        // args
+	// )
+	// if err != nil {
+	// 	log.Fatal("can't consume:", err)
+	// }
+	//
+	// go func() {
+	// 	for d := range msgs {
+	// 		log.Printf("Received a message: %s", d.Body)
+	// 	}
+	// }()
 
 	port := "8001"
 	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%s", port))
@@ -82,7 +81,13 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	s := products.NewGrpcServer(port)
+	db, err := products.NewSqlDb(os.Getenv("PRODUCTS_SERVICE_DB_URL"))
+	if err != nil {
+		log.Fatalf("failed to mount db: %v", err)
+	}
+	pr := products.NewProductsRepository(db)
+	ps := products.NewProductsService(pr)
+	s := products.NewGrpcServer(port, ps)
 
 	log.Println("starting grpc server on:", port)
 	go func() {
@@ -100,8 +105,8 @@ func main() {
 	fmt.Println("Stopping...")
 
 	// RabbitMQ
-	mqChannel.Close()
-	conn.Close()
+	// mqChannel.Close()
+	// conn.Close()
 
 	// grpc
 	s.Stop()

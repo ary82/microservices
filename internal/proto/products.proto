@@ -6,16 +6,18 @@ package proto;
 service ProductsService {
   rpc GetProduct(ProductId) returns (Product);
   rpc GetProducts(GetProductsParams) returns (ProductList);
-  rpc AddProduct(Product) returns (AddProductResponse);
+  rpc AddProduct(AddProductRequest) returns (AddProductResponse);
+  rpc UpdateInventory(UpdateInventoryRequest) returns (UpdateInventoryResponse);
 }
 
 message ProductId { bytes value = 1; }
 
 message Product {
-  string name = 1;
-  string description = 2;
-  int64 price = 3;
-  int64 stock = 4;
+  bytes id = 1;
+  string name = 2;
+  string description = 3;
+  int64 price = 4;
+  int64 stock = 5;
 }
 
 message GetProductsParams {}
@@ -25,4 +27,26 @@ message ProductList {
   repeated Product products = 2;
 }
 
+message AddProductRequest {
+  string name = 1;
+  string description = 2;
+  int64 price = 3;
+  int64 stock = 4;
+}
+
 message AddProductResponse { bytes uuid = 1; }
+
+message UpdateInventoryRequest {
+  bytes id = 1;
+  UpdateInventoryType type = 2;
+  int64 number = 3;
+}
+
+enum UpdateInventoryType {
+  UPDATE_INVENTORY_TYPE_INVALID = 0;
+  UPDATE_INVENTORY_TYPE_ADD = 1;
+  UPDATE_INVENTORY_TYPE_SUBTRACT = 2;
+  UPDATE_INVENTORY_TYPE_DELETE = 3;
+}
+
+message UpdateInventoryResponse {}

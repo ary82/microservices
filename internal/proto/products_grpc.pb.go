@@ -19,9 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion8
 
 const (
-	ProductsService_GetProduct_FullMethodName  = "/proto.ProductsService/GetProduct"
-	ProductsService_GetProducts_FullMethodName = "/proto.ProductsService/GetProducts"
-	ProductsService_AddProduct_FullMethodName  = "/proto.ProductsService/AddProduct"
+	ProductsService_GetProduct_FullMethodName      = "/proto.ProductsService/GetProduct"
+	ProductsService_GetProducts_FullMethodName     = "/proto.ProductsService/GetProducts"
+	ProductsService_AddProduct_FullMethodName      = "/proto.ProductsService/AddProduct"
+	ProductsService_UpdateInventory_FullMethodName = "/proto.ProductsService/UpdateInventory"
 )
 
 // ProductsServiceClient is the client API for ProductsService service.
@@ -30,7 +31,8 @@ const (
 type ProductsServiceClient interface {
 	GetProduct(ctx context.Context, in *ProductId, opts ...grpc.CallOption) (*Product, error)
 	GetProducts(ctx context.Context, in *GetProductsParams, opts ...grpc.CallOption) (*ProductList, error)
-	AddProduct(ctx context.Context, in *Product, opts ...grpc.CallOption) (*AddProductResponse, error)
+	AddProduct(ctx context.Context, in *AddProductRequest, opts ...grpc.CallOption) (*AddProductResponse, error)
+	UpdateInventory(ctx context.Context, in *UpdateInventoryRequest, opts ...grpc.CallOption) (*UpdateInventoryResponse, error)
 }
 
 type productsServiceClient struct {
@@ -61,10 +63,20 @@ func (c *productsServiceClient) GetProducts(ctx context.Context, in *GetProducts
 	return out, nil
 }
 
-func (c *productsServiceClient) AddProduct(ctx context.Context, in *Product, opts ...grpc.CallOption) (*AddProductResponse, error) {
+func (c *productsServiceClient) AddProduct(ctx context.Context, in *AddProductRequest, opts ...grpc.CallOption) (*AddProductResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AddProductResponse)
 	err := c.cc.Invoke(ctx, ProductsService_AddProduct_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *productsServiceClient) UpdateInventory(ctx context.Context, in *UpdateInventoryRequest, opts ...grpc.CallOption) (*UpdateInventoryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateInventoryResponse)
+	err := c.cc.Invoke(ctx, ProductsService_UpdateInventory_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +89,8 @@ func (c *productsServiceClient) AddProduct(ctx context.Context, in *Product, opt
 type ProductsServiceServer interface {
 	GetProduct(context.Context, *ProductId) (*Product, error)
 	GetProducts(context.Context, *GetProductsParams) (*ProductList, error)
-	AddProduct(context.Context, *Product) (*AddProductResponse, error)
+	AddProduct(context.Context, *AddProductRequest) (*AddProductResponse, error)
+	UpdateInventory(context.Context, *UpdateInventoryRequest) (*UpdateInventoryResponse, error)
 	mustEmbedUnimplementedProductsServiceServer()
 }
 
@@ -91,8 +104,11 @@ func (UnimplementedProductsServiceServer) GetProduct(context.Context, *ProductId
 func (UnimplementedProductsServiceServer) GetProducts(context.Context, *GetProductsParams) (*ProductList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProducts not implemented")
 }
-func (UnimplementedProductsServiceServer) AddProduct(context.Context, *Product) (*AddProductResponse, error) {
+func (UnimplementedProductsServiceServer) AddProduct(context.Context, *AddProductRequest) (*AddProductResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddProduct not implemented")
+}
+func (UnimplementedProductsServiceServer) UpdateInventory(context.Context, *UpdateInventoryRequest) (*UpdateInventoryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateInventory not implemented")
 }
 func (UnimplementedProductsServiceServer) mustEmbedUnimplementedProductsServiceServer() {}
 
@@ -144,7 +160,7 @@ func _ProductsService_GetProducts_Handler(srv interface{}, ctx context.Context, 
 }
 
 func _ProductsService_AddProduct_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Product)
+	in := new(AddProductRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -156,7 +172,25 @@ func _ProductsService_AddProduct_Handler(srv interface{}, ctx context.Context, d
 		FullMethod: ProductsService_AddProduct_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProductsServiceServer).AddProduct(ctx, req.(*Product))
+		return srv.(ProductsServiceServer).AddProduct(ctx, req.(*AddProductRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProductsService_UpdateInventory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateInventoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProductsServiceServer).UpdateInventory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProductsService_UpdateInventory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProductsServiceServer).UpdateInventory(ctx, req.(*UpdateInventoryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -179,6 +213,10 @@ var ProductsService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AddProduct",
 			Handler:    _ProductsService_AddProduct_Handler,
+		},
+		{
+			MethodName: "UpdateInventory",
+			Handler:    _ProductsService_UpdateInventory_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
