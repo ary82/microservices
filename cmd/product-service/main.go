@@ -10,6 +10,7 @@ import (
 
 	"github.com/ary82/microservices/internal/products"
 	"github.com/joho/godotenv"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 func main() {
@@ -21,61 +22,7 @@ func main() {
 		}
 	}
 
-	// conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
-	// if err != nil {
-	// 	log.Fatal("can't initialize queue:", err)
-	// }
-	//
-	// mqChannel, err := conn.Channel()
-	// if err != nil {
-	// 	log.Fatal("can't initialize channel:", err)
-	// }
-	// queue, err := mqChannel.QueueDeclare(
-	// 	"q1",
-	// 	true,
-	// 	false,
-	// 	false,
-	// 	false,
-	// 	nil,
-	// )
-	// if err != nil {
-	// 	log.Fatal("can't initialize queue:", err)
-	// }
-
-	// body := "Hello World!"
-	// err = mqChannel.PublishWithContext(context.Background(),
-	// 	"",         // exchange
-	// 	queue.Name, // routing key
-	// 	false,      // mandatory
-	// 	false,      // immediate
-	// 	amqp.Publishing{
-	// 		ContentType: "text/plain",
-	// 		Body:        []byte(body),
-	// 	},
-	// )
-	// if err != nil {
-	// 	log.Fatal("can't send message:", err)
-	// }
-	// msgs, err := mqChannel.Consume(
-	// 	queue.Name, // queue
-	// 	"",         // consumer
-	// 	true,       // auto-ack
-	// 	false,      // exclusive
-	// 	false,      // no-local
-	// 	false,      // no-wait
-	// 	nil,        // args
-	// )
-	// if err != nil {
-	// 	log.Fatal("can't consume:", err)
-	// }
-	//
-	// go func() {
-	// 	for d := range msgs {
-	// 		log.Printf("Received a message: %s", d.Body)
-	// 	}
-	// }()
-
-	port := "8001"
+	port := os.Getenv("PRODUCTS_SERVICE_GRPC_PORT")
 	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%s", port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
@@ -85,8 +32,24 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to mount db: %v", err)
 	}
+
+	conn, err := amqp.Dial(os.Getenv("RABBITMQ_CONN_STR"))
+	if err != nil {
+		log.Fatal("can't initialize queue:", err)
+	}
+
+	mqChannel, err := conn.Channel()
+	if err != nil {
+		log.Fatal("can't initialize channel:", err)
+	}
+
+	err = products.InitializeConsumerQueue(mqChannel)
+	if err != nil {
+		log.Fatal("mq initialization failed:", err)
+	}
+
 	pr := products.NewProductsRepository(db)
-	ps := products.NewProductsService(pr)
+	ps := products.NewProductsService(pr, mqChannel)
 	s := products.NewGrpcServer(port, ps)
 
 	log.Println("starting grpc server on:", port)

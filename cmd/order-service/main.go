@@ -10,6 +10,7 @@ import (
 
 	"github.com/ary82/microservices/internal/orders"
 	"github.com/joho/godotenv"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 func main() {
@@ -21,7 +22,7 @@ func main() {
 		}
 	}
 
-	port := "8003"
+	port := os.Getenv("ORDERS_SERVICE_GRPC_PORT")
 	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%s", port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
@@ -31,8 +32,24 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to mount db: %v", err)
 	}
+
+	conn, err := amqp.Dial(os.Getenv("RABBITMQ_CONN_STR"))
+	if err != nil {
+		log.Fatal("can't initialize queue:", err)
+	}
+
+	mqChannel, err := conn.Channel()
+	if err != nil {
+		log.Fatal("can't initialize channel:", err)
+	}
+
+	err = orders.InitializeConsumerQueue(mqChannel)
+	if err != nil {
+		log.Fatal("can't initialize channel:", err)
+	}
+
 	repo := orders.NewOrdersRepository(db)
-	service := orders.NewOrdersService(repo)
+	service := orders.NewOrdersService(repo, mqChannel)
 	s := orders.NewGrpcServer(port, service)
 
 	log.Println("starting grpc server on:", port)

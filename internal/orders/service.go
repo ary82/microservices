@@ -1,6 +1,9 @@
 package orders
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+	amqp "github.com/rabbitmq/amqp091-go"
+)
 
 type OrdersService interface {
 	GetOrder(id uuid.UUID) (*DetailedOrder, error)
@@ -9,12 +12,14 @@ type OrdersService interface {
 }
 
 type ordersService struct {
-	repo OrdersRepository
+	repo   OrdersRepository
+	mqChan *amqp.Channel
 }
 
-func NewOrdersService(repo OrdersRepository) OrdersService {
+func NewOrdersService(repo OrdersRepository, ch *amqp.Channel) OrdersService {
 	return &ordersService{
-		repo: repo,
+		repo:   repo,
+		mqChan: ch,
 	}
 }
 

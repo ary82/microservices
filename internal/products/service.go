@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type ProductsService interface {
@@ -14,12 +15,14 @@ type ProductsService interface {
 }
 
 type productsService struct {
-	repo ProductsRepository
+	repo   ProductsRepository
+	mqChan *amqp.Channel
 }
 
-func NewProductsService(repo ProductsRepository) ProductsService {
+func NewProductsService(repo ProductsRepository, ch *amqp.Channel) ProductsService {
 	return &productsService{
-		repo: repo,
+		repo:   repo,
+		mqChan: ch,
 	}
 }
 
