@@ -1,0 +1,81 @@
+type User {
+  id: ID!
+  email: String!
+  username: String!
+  type: Int!
+}
+
+type Product {
+  id: ID!
+  name: String!
+  description: String!
+  price: Int!
+  stock: Int!
+}
+
+type Order {
+  id: ID!
+  user_id: ID!
+  price_total: Int!
+  quantity: Int!
+  order_products: [OrderProduct!]!
+}
+
+type OrderProduct {
+  product_id: ID!
+  quantity: Int!
+  price: Int!
+}
+
+input PlaceOrderProduct {
+  product_id: ID!
+  quantity: Int!
+}
+
+input NewUser {
+  email: String!
+  username: String!
+  password: String!
+  type: Int!
+}
+
+input Login {
+  email: String!
+  password: String!
+}
+
+input CreateProduct {
+  name: String!
+  description: String!
+  price: Int!
+  stock: Int!
+}
+
+input UpdateInventory {
+  id: ID!
+  type: Int!
+  number: Int!
+}
+
+input PlaceOrder {
+  order_products: [PlaceOrderProduct!]!
+}
+
+type Query {
+  user: User!
+  users: [User!]!
+
+  product: Product!
+  products: [Product!]!
+
+  order: Order!
+  orders: [Order!]!
+}
+
+type Mutation {
+  registerUser(input: NewUser!): User!
+  login(input: Login!): String!
+  createProduct(input: CreateProduct!): Product!
+  updateInventory(input: UpdateInventory!): Product!
+  placeOrder(input: PlaceOrder!): Order!
+}
