@@ -67,7 +67,8 @@ func (s *ordersServiceRpc) GetOrders(context.Context, *proto.GetOrdersParams) (*
 
 	for _, v := range orders {
 		resp.Orders = append(resp.Orders, &proto.OrderListOrder{
-			UserId:     v.Id[:],
+			OrderId:    v.Id[:],
+			UserId:     v.UserId[:],
 			PriceTotal: int64(v.TotalPrice),
 			Quantity:   int64(v.TotalQuantity),
 		})

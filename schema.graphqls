@@ -5,6 +5,10 @@ type User {
   type: Int!
 }
 
+type Token {
+  token: String!
+}
+
 type Product {
   id: ID!
   name: String!
@@ -13,12 +17,23 @@ type Product {
   stock: Int!
 }
 
+type UpdateInventoryResponse {
+  success: Boolean!
+}
+
 type Order {
   id: ID!
   user_id: ID!
   price_total: Int!
   quantity: Int!
   order_products: [OrderProduct!]!
+}
+
+type AllOrdersOrder {
+  id: ID!
+  user_id: ID!
+  price_total: Int!
+  quantity: Int!
 }
 
 type OrderProduct {
@@ -62,20 +77,20 @@ input PlaceOrder {
 }
 
 type Query {
-  user: User!
+  user(id: ID!): User!
   users: [User!]!
 
-  product: Product!
+  product(id: ID!): Product!
   products: [Product!]!
 
-  order: Order!
-  orders: [Order!]!
+  order(id: ID!): Order!
+  orders: [AllOrdersOrder!]!
 }
 
 type Mutation {
   registerUser(input: NewUser!): User!
-  login(input: Login!): String!
+  login(input: Login!): Token!
   createProduct(input: CreateProduct!): Product!
-  updateInventory(input: UpdateInventory!): Product!
+  updateInventory(input: UpdateInventory!): UpdateInventoryResponse!
   placeOrder(input: PlaceOrder!): Order!
 }

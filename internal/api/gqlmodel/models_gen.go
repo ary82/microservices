@@ -2,6 +2,13 @@
 
 package gqlmodel
 
+type AllOrdersOrder struct {
+	ID         string `json:"id"`
+	UserID     string `json:"user_id"`
+	PriceTotal int    `json:"price_total"`
+	Quantity   int    `json:"quantity"`
+}
+
 type CreateProduct struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
@@ -58,10 +65,18 @@ type Product struct {
 type Query struct {
 }
 
+type Token struct {
+	Token string `json:"token"`
+}
+
 type UpdateInventory struct {
 	ID     string `json:"id"`
 	Type   int    `json:"type"`
 	Number int    `json:"number"`
+}
+
+type UpdateInventoryResponse struct {
+	Success bool `json:"success"`
 }
 
 type User struct {

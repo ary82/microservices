@@ -6,65 +6,287 @@ package api
 
 import (
 	"context"
-	"fmt"
+	"encoding/base64"
 
 	"github.com/ary82/microservices/internal/api/gql"
 	"github.com/ary82/microservices/internal/api/gqlmodel"
+	"github.com/ary82/microservices/internal/proto"
 )
 
 // RegisterUser is the resolver for the registerUser field.
 func (r *mutationResolver) RegisterUser(ctx context.Context, input gqlmodel.NewUser) (*gqlmodel.User, error) {
-	panic(fmt.Errorf("not implemented: RegisterUser - registerUser"))
+	res, err := r.UserService.RegisterUser(context.Background(), &proto.RegisterUserRequest{
+		Email:    input.Email,
+		Username: input.Username,
+		Password: input.Password,
+		Type:     proto.UserType(input.Type),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	id := base64.StdEncoding.EncodeToString(res.Id)
+
+	return &gqlmodel.User{
+		ID:       id,
+		Email:    input.Email,
+		Username: input.Username,
+		Type:     input.Type,
+	}, nil
 }
 
 // Login is the resolver for the login field.
-func (r *mutationResolver) Login(ctx context.Context, input gqlmodel.Login) (string, error) {
-	panic(fmt.Errorf("not implemented: Login - login"))
+func (r *mutationResolver) Login(ctx context.Context, input gqlmodel.Login) (*gqlmodel.Token, error) {
+	res, err := r.UserService.Login(context.Background(), &proto.LoginRequest{
+		Email:    input.Email,
+		Password: input.Password,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &gqlmodel.Token{
+		Token: res.AccessToken,
+	}, nil
 }
 
 // CreateProduct is the resolver for the createProduct field.
 func (r *mutationResolver) CreateProduct(ctx context.Context, input gqlmodel.CreateProduct) (*gqlmodel.Product, error) {
-	panic(fmt.Errorf("not implemented: CreateProduct - createProduct"))
+	panic("unimplemented")
+	// TODO: AUTH - ADMIN ONLY
+
+	res, err := r.ProductService.AddProduct(context.Background(), &proto.AddProductRequest{
+		Name:        input.Name,
+		Description: input.Description,
+		Price:       int64(input.Price),
+		Stock:       int64(input.Stock),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	id := base64.StdEncoding.EncodeToString(res.Uuid)
+
+	return &gqlmodel.Product{
+		ID:          id,
+		Name:        input.Name,
+		Description: input.Description,
+		Price:       input.Price,
+		Stock:       input.Stock,
+	}, nil
 }
 
 // UpdateInventory is the resolver for the updateInventory field.
-func (r *mutationResolver) UpdateInventory(ctx context.Context, input gqlmodel.UpdateInventory) (*gqlmodel.Product, error) {
-	panic(fmt.Errorf("not implemented: UpdateInventory - updateInventory"))
+func (r *mutationResolver) UpdateInventory(ctx context.Context, input gqlmodel.UpdateInventory) (*gqlmodel.UpdateInventoryResponse, error) {
+	panic("unimplemented")
+	// TODO: AUTH - ADMIN ONLY
+
+	id, err := base64.StdEncoding.DecodeString(input.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = r.ProductService.UpdateInventory(context.Background(), &proto.UpdateInventoryRequest{
+		Id:     id,
+		Type:   proto.UpdateInventoryType(input.Type),
+		Number: int64(input.Number),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &gqlmodel.UpdateInventoryResponse{
+		Success: true,
+	}, nil
 }
 
 // PlaceOrder is the resolver for the placeOrder field.
 func (r *mutationResolver) PlaceOrder(ctx context.Context, input gqlmodel.PlaceOrder) (*gqlmodel.Order, error) {
-	panic(fmt.Errorf("not implemented: PlaceOrder - placeOrder"))
+	orderProducts := []*proto.PlaceOrderProduct{}
+
+	for _, v := range input.OrderProducts {
+		productIdByte, err := base64.StdEncoding.DecodeString(v.ProductID)
+		if err != nil {
+			return nil, err
+		}
+
+		product, err := r.ProductService.GetProduct(context.Background(), &proto.ProductId{
+			Value: productIdByte,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		orderProducts = append(orderProducts, &proto.PlaceOrderProduct{
+			ProductId: productIdByte,
+			Quantity:  int64(v.Quantity),
+			Price:     product.Price,
+		})
+
+	}
+
+	panic("unimplemented")
+	// TODO: Feed UserId from the JWT
+
+	res, err := r.OrderService.PlaceOrder(context.Background(), &proto.PlaceOrderParams{
+		UserId:   []byte("test string"),
+		Products: orderProducts,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	thisOrder, err := r.OrderService.GetOrder(context.Background(), &proto.OrderId{
+		Value: res.Uuid,
+	})
+
+	gqlRes := gqlmodel.Order{
+		ID:         base64.StdEncoding.EncodeToString(res.Uuid),
+		UserID:     base64.StdEncoding.EncodeToString(thisOrder.UserId),
+		PriceTotal: int(thisOrder.PriceTotal),
+		Quantity:   int(thisOrder.Quantity),
+	}
+
+	for _, v := range thisOrder.Products {
+		gqlRes.OrderProducts = append(gqlRes.OrderProducts, &gqlmodel.OrderProduct{
+			ProductID: base64.StdEncoding.EncodeToString(v.ProductId),
+			Quantity:  int(v.Quantity),
+			Price:     int(v.Price),
+		})
+	}
+	return &gqlRes, nil
 }
 
 // User is the resolver for the user field.
-func (r *queryResolver) User(ctx context.Context) (*gqlmodel.User, error) {
-	panic(fmt.Errorf("not implemented: User - user"))
+func (r *queryResolver) User(ctx context.Context, id string) (*gqlmodel.User, error) {
+	user, err := r.UserService.GetUser(context.Background(), &proto.UserId{
+		Value: id,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &gqlmodel.User{
+		ID:       id,
+		Email:    user.Email,
+		Username: user.Username,
+		Type:     int(user.Type),
+	}, nil
 }
 
 // Users is the resolver for the users field.
 func (r *queryResolver) Users(ctx context.Context) ([]*gqlmodel.User, error) {
-	panic(fmt.Errorf("not implemented: Users - users"))
+	res, err := r.UserService.GetUsers(context.Background(), &proto.GetUsersParams{})
+	if err != nil {
+		return nil, err
+	}
+
+	gqlRes := []*gqlmodel.User{}
+	for _, v := range res.Users {
+		id := base64.StdEncoding.EncodeToString(v.Id)
+		gqlRes = append(gqlRes, &gqlmodel.User{
+			ID:       id,
+			Email:    v.Email,
+			Username: v.Username,
+			Type:     int(v.Type),
+		})
+	}
+	return gqlRes, nil
 }
 
 // Product is the resolver for the product field.
-func (r *queryResolver) Product(ctx context.Context) (*gqlmodel.Product, error) {
-	panic(fmt.Errorf("not implemented: Product - product"))
+func (r *queryResolver) Product(ctx context.Context, id string) (*gqlmodel.Product, error) {
+	idByte, err := base64.StdEncoding.DecodeString(id)
+	if err != nil {
+		return nil, err
+	}
+
+	product, err := r.ProductService.GetProduct(context.Background(), &proto.ProductId{
+		Value: idByte,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &gqlmodel.Product{
+		ID:          id,
+		Name:        product.Name,
+		Description: product.Description,
+		Price:       int(product.Price),
+		Stock:       int(product.Stock),
+	}, nil
 }
 
 // Products is the resolver for the products field.
 func (r *queryResolver) Products(ctx context.Context) ([]*gqlmodel.Product, error) {
-	panic(fmt.Errorf("not implemented: Products - products"))
+	res, err := r.ProductService.GetProducts(context.Background(), &proto.GetProductsParams{})
+	if err != nil {
+		return nil, err
+	}
+
+	gqlRes := []*gqlmodel.Product{}
+	for _, v := range res.Products {
+		gqlRes = append(gqlRes, &gqlmodel.Product{
+			ID:          base64.StdEncoding.EncodeToString(v.Id),
+			Name:        v.Name,
+			Description: v.Description,
+			Price:       int(v.Price),
+			Stock:       int(v.Stock),
+		})
+	}
+
+	return gqlRes, nil
 }
 
 // Order is the resolver for the order field.
-func (r *queryResolver) Order(ctx context.Context) (*gqlmodel.Order, error) {
-	panic(fmt.Errorf("not implemented: Order - order"))
+func (r *queryResolver) Order(ctx context.Context, id string) (*gqlmodel.Order, error) {
+	idByte, err := base64.StdEncoding.DecodeString(id)
+	if err != nil {
+		return nil, err
+	}
+
+	order, err := r.OrderService.GetOrder(context.Background(), &proto.OrderId{
+		Value: idByte,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	gqlRes := gqlmodel.Order{
+		ID:         id,
+		UserID:     base64.StdEncoding.EncodeToString(order.UserId),
+		PriceTotal: int(order.PriceTotal),
+		Quantity:   int(order.Quantity),
+	}
+
+	for _, v := range order.Products {
+		gqlRes.OrderProducts = append(gqlRes.OrderProducts, &gqlmodel.OrderProduct{
+			ProductID: base64.StdEncoding.EncodeToString(v.ProductId),
+			Quantity:  int(v.Quantity),
+			Price:     int(v.Price),
+		})
+	}
+
+	return &gqlRes, nil
 }
 
 // Orders is the resolver for the orders field.
-func (r *queryResolver) Orders(ctx context.Context) ([]*gqlmodel.Order, error) {
-	panic(fmt.Errorf("not implemented: Orders - orders"))
+func (r *queryResolver) Orders(ctx context.Context) ([]*gqlmodel.AllOrdersOrder, error) {
+	orders, err := r.OrderService.GetOrders(context.Background(), &proto.GetOrdersParams{})
+	if err != nil {
+		return nil, err
+	}
+
+	gqlRes := []*gqlmodel.AllOrdersOrder{}
+
+	for _, v := range orders.Orders {
+		gqlRes = append(gqlRes, &gqlmodel.AllOrdersOrder{
+			ID:         base64.StdEncoding.EncodeToString(v.OrderId),
+			UserID:     base64.StdEncoding.EncodeToString(v.UserId),
+			PriceTotal: int(v.PriceTotal),
+			Quantity:   int(v.Quantity),
+		})
+	}
+	return gqlRes, nil
 }
 
 // Mutation returns gql.MutationResolver implementation.
@@ -73,5 +295,7 @@ func (r *Resolver) Mutation() gql.MutationResolver { return &mutationResolver{r}
 // Query returns gql.QueryResolver implementation.
 func (r *Resolver) Query() gql.QueryResolver { return &queryResolver{r} }
 
-type mutationResolver struct{ *Resolver }
-type queryResolver struct{ *Resolver }
+type (
+	mutationResolver struct{ *Resolver }
+	queryResolver    struct{ *Resolver }
+)

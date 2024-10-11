@@ -33,9 +33,10 @@ message OrderList {
 }
 
 message OrderListOrder {
-  bytes user_id = 1;
-  int64 price_total = 2;
-  int64 quantity = 3;
+  bytes order_id = 1;
+  bytes user_id = 2;
+  int64 price_total = 3;
+  int64 quantity = 4;
 }
 
 message PlaceOrderParams {
