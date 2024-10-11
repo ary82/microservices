@@ -1,0 +1,34 @@
+digraph {
+  bgcolor=transparent
+  rankdir=LR
+  graph [fontsize=18 fontname="HackNerdFont" style=filled color=lightblue2]
+  node [fontsize=14 fontname="HackNerdFont" shape=box style=filled fillcolor=white]
+  edge [fontsize=12 minlen=2 fontname="HackNerdFont"]
+
+  subgraph cluster {
+    label="architecture"
+
+    api[label="GQL" shape=hexagon]
+    c[label="orders service"]
+    b[label="products service"]
+    a[label="users service"]
+
+    api->a[dir=both label="grpc"]
+    api->b[dir=both label="grpc"]
+    api->c[dir=both label="grpc"]
+
+    b->a[dir=both label="MQ"]
+    c->b[dir=both label="MQ"]
+
+    {rank = same; a; c;}
+    {rank = same; c; b;}
+
+    pg1[label="Postgres 1" shape=cylinder]
+    pg2[label="Postgres 2" shape=cylinder]
+    pg3[label="Postgres 3" shape=cylinder]
+
+    a->pg1[dir=both]
+    b->pg2[dir=both]
+    c->pg3[dir=both]
+  }
+}

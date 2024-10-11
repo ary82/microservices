@@ -1,0 +1,35 @@
+digraph {
+  bgcolor=transparent
+  graph[fontsize=18 style=filled color=orange2 fontname="HackNerdFont"]
+  node[fontsize=14 style=filled fillcolor=white fontname="HackNerdFont"]
+  edge [fontsize=12 minlen=3 fontname="HackNerdFont"]
+
+  subgraph cluster {
+    label="rabbitMQ"
+    a[label="USER\n\nPRODUCE: \nUser Registered\n\nCONSUME: \n-" shape=box]
+    b[label="PRODUCT\n\nPRODUCE: \nProduct Created\nInventory update\n\nCONSUME: \nUser Registered\nOrder Placed" shape=box]
+    c[shape=box label="ORDER\n\nPRODUCE: \nOrder Placed\n\nCONSUME: \nUser registered\nProduct Created\nInventory update"]
+
+    exchange[label="rabbitMQ exchange" shape=box3d]
+    a->exchange
+    b->exchange
+    c->exchange
+
+    q1[label="P:USER,PRODUCT\nC:ORDER" shape=rarrow]
+    q2[label="P:USER,ORDER\nC:PRODUCT" shape=rarrow]
+    
+    exchange->q1[label="User registered"]
+    exchange->q2[label="User registered"]
+
+    exchange->q1[label="Product Created"]
+
+    exchange->q1[label="Inventory update"]
+    q1->c
+
+    exchange->q2[label="Order Placed"]
+    q2->b
+
+    {rank=min;a;b;c}
+    {rank=max;q1;q2}
+  }
+}
