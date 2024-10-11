@@ -84,7 +84,11 @@ func (s *usersService) LoginUser(req LoginRequest) (*string, error) {
 		return nil, fmt.Errorf("password incorrect")
 	}
 
-	token, err := GenerateJWT(user.Email, user.UserType)
+	token, err := GenerateJWT(
+		user.Email,
+		base64.StdEncoding.EncodeToString(user.Id[:]),
+		user.UserType,
+	)
 	if err != nil {
 		return nil, err
 	}

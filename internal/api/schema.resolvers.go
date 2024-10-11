@@ -7,6 +7,7 @@ package api
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 
 	"github.com/ary82/microservices/internal/api/gql"
 	"github.com/ary82/microservices/internal/api/gqlmodel"
@@ -51,8 +52,15 @@ func (r *mutationResolver) Login(ctx context.Context, input gqlmodel.Login) (*gq
 
 // CreateProduct is the resolver for the createProduct field.
 func (r *mutationResolver) CreateProduct(ctx context.Context, input gqlmodel.CreateProduct) (*gqlmodel.Product, error) {
-	panic("unimplemented")
-	// TODO: AUTH - ADMIN ONLY
+	// Auth
+	tok := ctx.Value(TokenCtxKey("token")).(string)
+	info, err := ParseJWT(tok)
+	if err != nil {
+		return nil, err
+	}
+	if info.UserType != 1 {
+		return nil, fmt.Errorf("not allowed for UserType: %v", info.UserType)
+	}
 
 	res, err := r.ProductService.AddProduct(context.Background(), &proto.AddProductRequest{
 		Name:        input.Name,
@@ -77,8 +85,15 @@ func (r *mutationResolver) CreateProduct(ctx context.Context, input gqlmodel.Cre
 
 // UpdateInventory is the resolver for the updateInventory field.
 func (r *mutationResolver) UpdateInventory(ctx context.Context, input gqlmodel.UpdateInventory) (*gqlmodel.UpdateInventoryResponse, error) {
-	panic("unimplemented")
-	// TODO: AUTH - ADMIN ONLY
+	// Auth
+	tok := ctx.Value(TokenCtxKey("token")).(string)
+	info, err := ParseJWT(tok)
+	if err != nil {
+		return nil, err
+	}
+	if info.UserType != 1 {
+		return nil, fmt.Errorf("not allowed for UserType: %v", info.UserType)
+	}
 
 	id, err := base64.StdEncoding.DecodeString(input.ID)
 	if err != nil {
@@ -101,6 +116,18 @@ func (r *mutationResolver) UpdateInventory(ctx context.Context, input gqlmodel.U
 
 // PlaceOrder is the resolver for the placeOrder field.
 func (r *mutationResolver) PlaceOrder(ctx context.Context, input gqlmodel.PlaceOrder) (*gqlmodel.Order, error) {
+	// Auth
+	tok := ctx.Value(TokenCtxKey("token")).(string)
+	info, err := ParseJWT(tok)
+	if err != nil {
+		return nil, err
+	}
+	if info.UserType != 0 && info.UserType != 1 {
+		return nil, fmt.Errorf("not allowed for UserType: %v", info.UserType)
+	}
+
+	userID, err := base64.StdEncoding.DecodeString(info.Id)
+
 	orderProducts := []*proto.PlaceOrderProduct{}
 
 	for _, v := range input.OrderProducts {
@@ -116,19 +143,19 @@ func (r *mutationResolver) PlaceOrder(ctx context.Context, input gqlmodel.PlaceO
 			return nil, err
 		}
 
+		if product.Stock < int64(v.Quantity) {
+			return nil, fmt.Errorf("product: %s with id: %s is out of stock", product.Name, v.ProductID)
+		}
+
 		orderProducts = append(orderProducts, &proto.PlaceOrderProduct{
 			ProductId: productIdByte,
 			Quantity:  int64(v.Quantity),
 			Price:     product.Price,
 		})
-
 	}
 
-	panic("unimplemented")
-	// TODO: Feed UserId from the JWT
-
 	res, err := r.OrderService.PlaceOrder(context.Background(), &proto.PlaceOrderParams{
-		UserId:   []byte("test string"),
+		UserId:   userID,
 		Products: orderProducts,
 	})
 	if err != nil {
