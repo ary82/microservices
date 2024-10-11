@@ -55,9 +55,9 @@ func (r *rabbitMqConsumer) Consume(events []string) error {
 
 	for _, key := range events {
 		err = r.ch.QueueBind(
-			queue.Name,           // queue name
-			key,                  // routing key
-			"inter_microservice", // exchange
+			queue.Name,     // queue name
+			key,            // routing key
+			r.exchangeName, // exchange
 			false,
 			nil,
 		)
