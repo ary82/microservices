@@ -16,7 +16,7 @@ func NewGrpcServer(port string, ps ProductsService) *grpc.Server {
 }
 
 // grpc server implementation
-type productsServiceRpc struct {
+type productDomainRpc struct {
 	service ProductsService
 
 	// implement grpc
@@ -24,12 +24,12 @@ type productsServiceRpc struct {
 }
 
 func NewProductsServer(ps ProductsService) proto.ProductsServiceServer {
-	return &productsServiceRpc{
+	return &productDomainRpc{
 		service: ps,
 	}
 }
 
-func (s *productsServiceRpc) GetProduct(ctx context.Context, in *proto.ProductId) (*proto.Product, error) {
+func (s *productDomainRpc) GetProduct(ctx context.Context, in *proto.ProductId) (*proto.Product, error) {
 	uuid, err := uuid.FromBytes(in.Value)
 	if err != nil {
 		return nil, err
@@ -47,7 +47,7 @@ func (s *productsServiceRpc) GetProduct(ctx context.Context, in *proto.ProductId
 	}, nil
 }
 
-func (s *productsServiceRpc) GetProducts(context.Context, *proto.GetProductsParams) (*proto.ProductList, error) {
+func (s *productDomainRpc) GetProducts(context.Context, *proto.GetProductsParams) (*proto.ProductList, error) {
 	products, err := s.service.GetProducts()
 	if err != nil {
 		return nil, err
@@ -69,7 +69,7 @@ func (s *productsServiceRpc) GetProducts(context.Context, *proto.GetProductsPara
 	return protoProducts, nil
 }
 
-func (s *productsServiceRpc) AddProduct(ctx context.Context, in *proto.AddProductRequest) (*proto.AddProductResponse, error) {
+func (s *productDomainRpc) AddProduct(ctx context.Context, in *proto.AddProductRequest) (*proto.AddProductResponse, error) {
 	id, err := s.service.AddProduct(AddProductRequest{
 		Name:  in.Name,
 		Desc:  in.Description,
@@ -85,7 +85,7 @@ func (s *productsServiceRpc) AddProduct(ctx context.Context, in *proto.AddProduc
 	}, nil
 }
 
-func (s *productsServiceRpc) UpdateInventory(ctx context.Context, in *proto.UpdateInventoryRequest) (*proto.UpdateInventoryResponse, error) {
+func (s *productDomainRpc) UpdateInventory(ctx context.Context, in *proto.UpdateInventoryRequest) (*proto.UpdateInventoryResponse, error) {
 	uuid, err := uuid.FromBytes(in.Id)
 	if err != nil {
 		return nil, err

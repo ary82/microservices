@@ -15,7 +15,7 @@ func NewGrpcServer(port string, s UsersService) *grpc.Server {
 }
 
 // grpc server implementation
-type usersServiceRpc struct {
+type userDomainRpc struct {
 	service UsersService
 
 	// implement grpc
@@ -23,12 +23,12 @@ type usersServiceRpc struct {
 }
 
 func NewUsersServer(s UsersService) proto.UserServiceServer {
-	return &usersServiceRpc{
+	return &userDomainRpc{
 		service: s,
 	}
 }
 
-func (s *usersServiceRpc) GetUser(ctx context.Context, in *proto.UserId) (*proto.User, error) {
+func (s *userDomainRpc) GetUser(ctx context.Context, in *proto.UserId) (*proto.User, error) {
 	user, err := s.service.GetUser(in.Value)
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func (s *usersServiceRpc) GetUser(ctx context.Context, in *proto.UserId) (*proto
 	}, nil
 }
 
-func (s *usersServiceRpc) GetUsers(context.Context, *proto.GetUsersParams) (*proto.Users, error) {
+func (s *userDomainRpc) GetUsers(context.Context, *proto.GetUsersParams) (*proto.Users, error) {
 	users, err := s.service.GetAllUsers()
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func (s *usersServiceRpc) GetUsers(context.Context, *proto.GetUsersParams) (*pro
 	return protoUsers, nil
 }
 
-func (s *usersServiceRpc) Login(ctx context.Context, in *proto.LoginRequest) (*proto.LoginResponse, error) {
+func (s *userDomainRpc) Login(ctx context.Context, in *proto.LoginRequest) (*proto.LoginResponse, error) {
 	token, err := s.service.LoginUser(LoginRequest{
 		Email:    in.Email,
 		Password: in.Password,
@@ -76,7 +76,7 @@ func (s *usersServiceRpc) Login(ctx context.Context, in *proto.LoginRequest) (*p
 	}, nil
 }
 
-func (s *usersServiceRpc) RegisterUser(ctx context.Context, in *proto.RegisterUserRequest) (*proto.RegisterUserResponse, error) {
+func (s *userDomainRpc) RegisterUser(ctx context.Context, in *proto.RegisterUserRequest) (*proto.RegisterUserResponse, error) {
 	req := RegisterUserRequest{
 		Username: in.Username,
 		Email:    in.Email,

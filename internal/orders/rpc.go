@@ -16,7 +16,7 @@ func NewGrpcServer(port string, os OrdersService) *grpc.Server {
 }
 
 // grpc server implementation
-type ordersServiceRpc struct {
+type ordersDomainRpc struct {
 	service OrdersService
 
 	// implement orders grpc
@@ -24,12 +24,12 @@ type ordersServiceRpc struct {
 }
 
 func NewOrdersServer(s OrdersService) proto.OrdersServiceServer {
-	return &ordersServiceRpc{
+	return &ordersDomainRpc{
 		service: s,
 	}
 }
 
-func (s *ordersServiceRpc) GetOrder(ctx context.Context, in *proto.OrderId) (*proto.Order, error) {
+func (s *ordersDomainRpc) GetOrder(ctx context.Context, in *proto.OrderId) (*proto.Order, error) {
 	id, err := uuid.FromBytes(in.Value)
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func (s *ordersServiceRpc) GetOrder(ctx context.Context, in *proto.OrderId) (*pr
 	return resp, nil
 }
 
-func (s *ordersServiceRpc) GetOrders(context.Context, *proto.GetOrdersParams) (*proto.OrderList, error) {
+func (s *ordersDomainRpc) GetOrders(context.Context, *proto.GetOrdersParams) (*proto.OrderList, error) {
 	orders, err := s.service.GetAllOrders()
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (s *ordersServiceRpc) GetOrders(context.Context, *proto.GetOrdersParams) (*
 	return resp, nil
 }
 
-func (s *ordersServiceRpc) PlaceOrder(ctx context.Context, in *proto.PlaceOrderParams) (*proto.PlaceOrderResponse, error) {
+func (s *ordersDomainRpc) PlaceOrder(ctx context.Context, in *proto.PlaceOrderParams) (*proto.PlaceOrderResponse, error) {
 	userId, err := uuid.FromBytes(in.UserId)
 	if err != nil {
 		return nil, err
