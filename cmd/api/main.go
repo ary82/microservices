@@ -21,7 +21,7 @@ const defaultPort = "8000"
 
 func main() {
 	mode := os.Getenv("MODE")
-	if mode != "dev" && mode != "prod" {
+	if mode != "local" && mode != "prod" {
 		err := godotenv.Load()
 		if err != nil {
 			log.Fatal("error loading .env:", err)

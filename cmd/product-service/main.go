@@ -15,7 +15,7 @@ import (
 
 func main() {
 	mode := os.Getenv("MODE")
-	if mode != "dev" && mode != "prod" {
+	if mode != "local" && mode != "prod" {
 		err := godotenv.Load()
 		if err != nil {
 			log.Fatal("error loading .env:", err)
@@ -23,7 +23,7 @@ func main() {
 	}
 
 	port := os.Getenv("PRODUCTS_SERVICE_GRPC_PORT")
-	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%s", port))
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}

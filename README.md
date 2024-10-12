@@ -19,7 +19,7 @@ git clone https://github.com/ary82/microservices.git
 cd microservices
 
 # 2. Start the dependencies
-docker compose up -d
+docker compose -f ./docker-compose-dev.yml up -d
 
 # 3. Copy the .env
 cp .env.example .env
@@ -29,6 +29,8 @@ make run-api
 make run-user
 make run-product
 make run-order
+
+# 5. Navigate to http://localhost:8001 for GraphQL playground
 ```
 
 ## Description
@@ -70,8 +72,9 @@ Here's how the microservices interact with each other and with RabbitMQ:
 
 ## Todos
 
-- [ ] Dockerize microservices
+- [X] Dockerize microservices
+- [ ] Single Docker compose for everything
 - [ ] Cache & dupe some data at various locations
 - [ ] Observability
 - [ ] Tests
-- [ ] Docs
+- [ ] Improve docs

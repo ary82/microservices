@@ -1,12 +1,74 @@
 services:
+  graphql-api:
+    build:
+      dockerfile: ./cmd/api/Dockerfile
+      context: .
+    env_file:
+      - .env.docker
+    ports:
+      - "8080:8001"
+    depends_on:
+      - user
+      - product
+      - order
+    restart: always
+
+  user:
+    build:
+      dockerfile: ./cmd/user-service/Dockerfile
+    env_file:
+      - .env.docker
+    ports:
+      - "8002:8002"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      pg-user:
+        condition: service_healthy
+    restart: always
+
+  product:
+    build:
+      dockerfile: ./cmd/product-service/Dockerfile
+    env_file:
+      - .env.docker
+    ports:
+      - "8003:8003"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      pg-product:
+        condition: service_healthy
+    restart: always
+
+  order:
+    build:
+      dockerfile: ./cmd/order-service/Dockerfile
+    env_file:
+      - .env.docker
+    ports:
+      - "8004:8004"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      pg-order:
+        condition: service_healthy
+    restart: always
+
   rabbitmq:
     hostname: "rabbit"
     image: rabbitmq:4.0-management-alpine
     ports:
       - 15672:15672
       - 5672:5672
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
 
-  pg1:
+  pg-user:
     image: postgres:17.0-alpine
     environment:
       POSTGRES_PASSWORD: abc
@@ -14,8 +76,13 @@ services:
       - "5433:5432"
     volumes:
       - ./migrations/init_users.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  pg2:
+  pg-product:
     image: postgres:17.0-alpine
     environment:
       POSTGRES_PASSWORD: abc
@@ -23,8 +90,13 @@ services:
       - "5434:5432"
     volumes:
       - ./migrations/init_products.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  pg3:
+  pg-order:
     image: postgres:17.0-alpine
     environment:
       POSTGRES_PASSWORD: abc
@@ -32,3 +104,8 @@ services:
       - "5435:5432"
     volumes:
       - ./migrations/init_orders.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
