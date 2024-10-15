@@ -1,4 +1,4 @@
-FROM golang:alpine3.20 as base
+FROM golang:alpine3.20 AS base
 
 WORKDIR /app
 
@@ -9,7 +9,6 @@ RUN go mod download
 COPY . .
 RUN apk add make
 
-RUN make clean
 RUN make build-api
 
 FROM scratch

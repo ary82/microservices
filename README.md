@@ -13,27 +13,40 @@ This is a monorepo containing code for microservices pertaining to an ecommerce 
 
 ## Installation
 
-```bash
-# 0. Ensure that you have Golang and Docker installed
+1. Ensure that you have Golang and Docker installed
 
-# 1. Clone and cd into the repo
-git clone https://github.com/ary82/microservices.git
-cd microservices
+2. Clone and cd into the repo
 
-# 2. Start the dependencies
-docker compose -f ./docker-compose-dev.yml up -d
+   ```bash
+   git clone https://github.com/ary82/microservices.git
+   cd microservices
+   ```
 
-# 3. Copy the .env
-cp .env.example .env
+3. Either start everything with docker compose
 
-# 4. Start each service
-make run-api
-make run-user
-make run-product
-make run-order
+   ```bash
+   docker compose up -d
 
-# 5. Navigate to http://localhost:8001 for GraphQL playground
-```
+   # Navigate to http://localhost:8080 for GraphQL playground
+   ```
+
+   **OR** Only start the dependencies with docker
+
+   ```bash
+   # Start the dependencies
+   docker compose -f ./docker-compose-dev.yml up -d
+
+   # Copy the .env
+   cp .env.example .env
+
+   # Start each service
+   make run-api
+   make run-user
+   make run-product
+   make run-order
+
+   # Navigate to http://localhost:8001 for GraphQL playground
+   ```
 
 ## Description
 
@@ -276,7 +289,7 @@ Here's how the microservices interact with each other and with RabbitMQ:
 
 - [x] DB locking for inventory updates
 - [x] Dockerize microservices
-- [ ] Single Docker compose for everything
+- [x] Single Docker compose for everything
 - [ ] Cache & dupe some data at various locations
 - [ ] Observability
 - [ ] Tests

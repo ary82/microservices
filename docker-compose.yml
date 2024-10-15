@@ -6,7 +6,7 @@ services:
     env_file:
       - .env.docker
     ports:
-      - "8080:8001"
+      - "8080:8080"
     depends_on:
       - user
       - product
@@ -19,7 +19,7 @@ services:
     env_file:
       - .env.docker
     ports:
-      - "8002:8002"
+      - "8001:8000"
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -33,7 +33,7 @@ services:
     env_file:
       - .env.docker
     ports:
-      - "8003:8003"
+      - "8002:8000"
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -47,7 +47,7 @@ services:
     env_file:
       - .env.docker
     ports:
-      - "8004:8004"
+      - "8003:8000"
     depends_on:
       rabbitmq:
         condition: service_healthy
